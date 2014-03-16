@@ -67,6 +67,8 @@ int64 CTransaction::nMinRelayTxFee = 10000;
 
 CMedianFilter<int> cPeerBlockCounts(8, 0); // Amount of blocks that other nodes claim to have
 
+uint256 bnPoolTarget = 0; // Basically, nothing until it is set
+
 map<uint256, CBlock*> mapOrphanBlocks;
 multimap<uint256, CBlock*> mapOrphanBlocksByPrev;
 
@@ -4890,7 +4892,7 @@ void BitcoinMiner(CWallet* pwallet, CBlockProvider* block_provider, unsigned int
         //
         int64 nStart = GetTime();
         //uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
-        uint256 hashTarget = CBigNum().SetCompact(0x200fffff).getuint256();
+        uint256 hashTarget = bnPoolTarget;
         
         //uint256 hashbuf[2];
         //uint256& hash = *alignup<16>(hashbuf);
@@ -4903,7 +4905,15 @@ void BitcoinMiner(CWallet* pwallet, CBlockProvider* block_provider, unsigned int
 
        
 		for(int i=0;i<1;i++){
-			pblock->nNonce=pblock->nNonce+1;
+			//pblock->nNonce=pblock->nNonce+1;
+			
+			// Get a new block, its equivilent to incrementing the nonce, and block updates can be recieved
+			if((pblock = block_provider->getBlock(thread_id, pblock == NULL ? 0 : pblock->nTime, blockcnt)) == NULL) { //server not reachable?
+				std::cout << "Could not get block. Waiting..." << std::endl;
+				MilliSleep(20000);
+				continue;
+			}
+			
 			if (nThreads == 0){
 				printf("MemoryCoinMiner terminated\n");
 				delete [] scratchpad;
@@ -4921,6 +4931,8 @@ void BitcoinMiner(CWallet* pwallet, CBlockProvider* block_provider, unsigned int
 				//printf("testHash %s, %d\n", testHash.ToString().c_str(), collisions);
 				break;
 			}
+			
+			break;
 		}
 		
             // Check if something found
@@ -4929,7 +4941,7 @@ void BitcoinMiner(CWallet* pwallet, CBlockProvider* block_provider, unsigned int
                 //for (unsigned int i = 0; i < sizeof(hash)/4; i++)
                 //    ((unsigned int*)&hash)[i] = ByteReverse(((unsigned int*)&hash)[i]);
 
-                if (testHash <= hashTarget)
+                if (testHash <= bnPoolTarget)
                 {
                     // Found a solution
                     //pblock->nNonce = ByteReverse(nNonceFound);

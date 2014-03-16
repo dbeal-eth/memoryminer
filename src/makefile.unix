@@ -141,7 +141,9 @@ OBJS= \
     obj/bloom.o \
     obj/noui.o \
     obj/leveldb.o \
-    obj/txdb.o
+    obj/txdb.o \
+    obj/json_spirit_reader.o \
+    obj/json_spirit_writer.o
 
 
 all: memoryminer

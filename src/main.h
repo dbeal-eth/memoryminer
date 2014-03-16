@@ -60,6 +60,8 @@ static const int fHaveUPnP = true;
 static const int fHaveUPnP = false;
 #endif
 
+extern uint256 bnPoolTarget;
+
 
 extern CScript COINBASE_FLAGS;
 
