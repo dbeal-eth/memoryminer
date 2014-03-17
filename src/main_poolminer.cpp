@@ -137,16 +137,33 @@ public:
 		std::vector<unsigned char> coinbase = ParseHex(cbtxn);
 		uint256 cbHash = Hash(BEGIN(coinbase[0]), END(coinbase[coinbase.size() - 1]));
 		std::cout << "CBHASH: " << cbHash.GetHex() << std::endl;
-		uint256 t[2];
-		t[0] = cbHash; // coinbase = base for merkle root
+		
+		unsigned char mr[32];
+		//memcpy(&mr[0], cbHash.begin(), 32); // coinbase = base for merkle root
+		/*for(unsigned int i = 0;i < 32;i++) {
+			mr[i] = *(cbHash.begin() + 31 - i);
+		}*/
+		
+		//std::cout << "CBHREV: " << cbHash.GetHex() << std::endl;
+		
+		// Time for some fun memory operations
+		unsigned char t[64];
+		memcpy(&t[0], cbHash.begin(), 32);
+		//memcpy(&t[0], cbHash.begin(), 32); // coinbase = base for merkle root
 		for(unsigned int i = 0;i < merkle_branch.size();i++) {
-			t[1] = hexToHash(merkle_branch[i]);
-			std::cout << "MBHash: " << t[1].GetHex() << std::endl;
-			t[0] = Hash(BEGIN(t[0]), END(t[1]));
+			memcpy(&t[32], &ParseHex(merkle_branch[i])[0], 32);
+			//std::cout << "MBHash: " << t[1].GetHex() << std::endl;
+			memcpy(&t[0], Hash(BEGIN(t[0]), END(t[63])).begin(), 32);
 		}
 		
-		// We should now have our merkle root hash in t[0]
-		block->hashMerkleRoot = t[0];
+		// Reverse the hash
+		//unsigned char mr[32];
+		/*for(unsigned int i = 0;i < 32;i++) {
+			mr[i] = t[31 - i];
+		}*/
+		
+		// We should now have our merkle root hash in t[0] - t[31]
+		memcpy(block->hashMerkleRoot.begin(), &t[0], 32);
 		
 		std::cout << "MERKLE ROOT: " << block->hashMerkleRoot.GetHex() << std::endl;
 		std::cout << "EN2: " << extranonce2 << std::endl;
